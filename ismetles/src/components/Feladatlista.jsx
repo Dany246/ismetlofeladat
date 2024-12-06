@@ -1,12 +1,37 @@
-import {  useState } from "react";
-const Feladatlista = () => {
-  const [feladatok, setFeladatok] = useState([]);
+import { useEffect, useState } from "react";
+import { SelectFeladat } from "./Select";
 
-  const [ujFeladat, setUjFeladat] = useState({ szoveg: "", kesz: false });
-  const ujFeladatHozzaadasa = () => {
-    setFeladatok([...feladatok, ujFeladat]);
+const Feladatlista = () => {
+  const [feladatok, setFeladatok] = useState(
+    localStorage.getItem("feladatok")
+      ? JSON.parse(localStorage.getItem("feladatok"))
+      : []
+  );
+
+  const [feladatokFilter, setFeladatokFilter] = useState("all");
+
+  const filteredFeladatok = feladatok.filter((feladat) => {
+    return (
+      feladatokFilter === "all" ||
+      (feladatokFilter === "ready" && feladat.kesz) ||
+      (feladatokFilter === "inProgress" && !feladat.kesz)
+    );
+  });
+
+  const onValueChange = (e) => {
+    setFeladatokFilter(e.target.value);
   };
 
+  const [ujFeladat, setUjFeladat] = useState({ szoveg: "", kesz: false });
+
+  const ujFeladatHozzaadasa = () => {
+    setFeladatok([...feladatok, ujFeladat]);
+    setUjFeladat({ szoveg: "", kesz: false }); // Ürítjük az inputot
+  };
+
+  useEffect(() => {
+    localStorage.setItem("feladatok", JSON.stringify(feladatok));
+  }, [feladatok]);
 
   return (
     <>
@@ -21,6 +46,7 @@ const Feladatlista = () => {
                 setUjFeladat({ ...ujFeladat, szoveg: e.target.value })
               }
             />
+            <SelectFeladat onValueChange={onValueChange} />
             <button
               className="m-6  border-4 border-gray-900 focus:outline-none text-black bg-gradient-to-r from-pink-600  to-indigo-600  font-medium rounded-lg text-bold px-5 py-2.5 me-2 mb-2 "
               onClick={ujFeladatHozzaadasa}
@@ -30,7 +56,7 @@ const Feladatlista = () => {
           </div>
           <div className="mx-auto align-center">
             <ul>
-              {feladatok.map((feladat, index) => (
+              {filteredFeladatok.map((feladat, index) => (
                 <li
                   className="block max-w-sm p-6 bg-white border  border-gray-400 rounded-lg shadow hover:bg-gray-100 dark:bg-gray-900  dark:border-gray-400 dark:hover:bg-gray-900"
                   key={index}
@@ -44,7 +70,7 @@ const Feladatlista = () => {
                         feladat.kesz ? "text-green-500" : "text-red-500"
                       }`}
                     >
-                      {feladat.kesz ? "Kesz" : "Nem kesz"}{" "}
+                      {feladat.kesz ? "Kész" : "Nem kész"}{" "}
                     </div>
                     <div>
                       <input
@@ -53,10 +79,13 @@ const Feladatlista = () => {
                         onChange={(e) =>
                           setFeladatok(
                             feladatok.map((f, i) =>
-                              i === index ? { ...f, kesz: e.target.checked } : f
+                              i === index
+                                ? { ...f, kesz: e.target.checked }
+                                : f
                             )
                           )
                         }
+                        checked={feladat.kesz}
                         type="checkbox"
                       />{" "}
                     </div>
